@@ -1,0 +1,73 @@
+# Dockerfile for the gdx (Game Development eXperience) Distrobox
+# This builds a Fedora image with Godot (Mono), .NET SDK, Neovim/Neovide, VS Code, Geany, and Rider.
+
+FROM fedora:latest
+
+# --- Configuration ---
+# Use ARG to allow build-time customization and ENV to set defaults.
+ARG GODOT_VERSION="4.5"
+ARG DOTNET_VERSION="8.0"
+ENV GODOT_VERSION=${GODOT_VERSION}
+ENV DOTNET_VERSION=${DOTNET_VERSION}
+
+# --- Installation ---
+# Combine installations into a single RUN layer to reduce image size.
+RUN dnf update -y && \
+    # Install base development tools and all necessary GUI libraries for Godot
+    dnf install -y git wget unzip curl desktop-file-utils && \
+    dnf group install -y "base-x" && \
+    dnf install -y mesa-libGL libXinerama libXrandr libXi libdecor mesa-libEGL && \
+    # Enable COPR repositories for Neovim Nightly and Neovide
+    dnf copr enable -y agriffis/neovim-nightly && \
+    dnf copr enable -y agriffis/neovide && \
+    # Install Neovim (as a dependency for Neovide), Neovide, and Geany
+    dnf install -y neovim neovide geany && \
+    # Install the .NET SDK (which also adds the Microsoft GPG key)
+    rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
+    wget -O /etc/yum.repos.d/microsoft-prod.repo https://packages.microsoft.com/config/fedora/$(rpm -E %fedora)/prod.repo && \
+    dnf install -y dotnet-sdk-${DOTNET_VERSION} && \
+    # Add the VS Code repository from a local file
+    dnf install -y code && \
+    # Clean up DNF cache
+    dnf clean all
+COPY vscode.repo /etc/yum.repos.d/vscode.repo
+
+# --- Godot Installation ---
+WORKDIR /tmp
+
+RUN wget https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip -O godot.zip && \
+    unzip godot.zip && \
+    mv Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64 /usr/local/lib/godot-mono && \
+    ln -s /usr/local/lib/godot-mono/Godot_v${GODOT_VERSION}-stable_mono_linux.x86_64 /usr/local/bin/godot && \
+    rm godot.zip
+
+# --- JetBrains Rider Installation ---
+WORKDIR /tmp
+
+RUN wget https://download.jetbrains.com/rider/JetBrains.Rider-2025.2.2.1.tar.gz -O rider.tar.gz && \
+    tar -xzf rider.tar.gz && \
+    # Use a wildcard to handle potential folder name changes between versions
+    mv JetBrains.Rider-* /usr/local/lib/rider && \
+    ln -s /usr/local/lib/rider/bin/rider.sh /usr/local/bin/rider && \
+    rm rider.tar.gz
+
+# --- Create Application Launchers (.desktop files) ---
+
+# First, download all the icons into the correct directory
+RUN wget https://raw.githubusercontent.com/godotengine/godot/master/icon.svg -O /usr/share/icons/hicolor/scalable/apps/godot.svg && \
+    wget https://raw.githubusercontent.com/neovide/neovide/main/assets/neovide.svg -O /usr/share/icons/hicolor/scalable/apps/neovide.svg && \
+    wget https://www.geany.org/images/geany.svg -O /usr/share/icons/hicolor/scalable/apps/geany.svg && \
+    wget https://resources.jetbrains.com/storage/products/rider/img/meta/rider_1280x800.svg -O /usr/share/icons/hicolor/scalable/apps/rider.svg
+
+# Then, copy all the .desktop files from the build context
+COPY desktop-files/*.desktop /usr/share/applications/
+
+# Finally, update the application database
+RUN update-desktop-database /usr/share/applications
+
+# --- Finalization ---
+# Set the working directory for when the container is entered.
+WORKDIR /home
+
+# Set a default command to keep the container running if needed.
+CMD ["/bin/bash"]
