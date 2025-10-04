@@ -8,18 +8,18 @@ gdx is a command-line interface (CLI) tool that manages project-specific, contai
 
 The primary command, gdx init, bootstraps a new project by:
 
-    Cloning a base Godot project template.
-
     Generating a tailored Dockerfile that includes the user's choice of IDE and a suite of tools for either 2D or 3D development.
 
     Creating a README.md with personalized instructions on how to build the container and get started.
+
+    Initializing a new project template using Chickensoft's [GodotGame](https://github.com/Chickensoft/GodotGame) dotnet tool (`dotnet new chickengame --name "MyGameName"`).
 
 Future commands will allow users to manage and interact with the project's environment directly from the command line.
 3. Core Features (for the init command)
 
     Interactive Setup: The init command will guide the user through a series of simple questions to configure their environment.
 
-    Project Template: It will initialize the project by cloning the Chickensoft GodotGame repository as a starting point.
+    Project Template: It will initialize the project by using the Chickensoft GodotGame dotnet tool.
 
     IDE Selection: Users can choose one or more IDEs to be included in the container.
 

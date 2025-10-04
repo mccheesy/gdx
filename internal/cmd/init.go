@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/mccheesy/gdx/internal/templates"
 	"github.com/mccheesy/gdx/internal/tui"
 )
 
@@ -57,12 +58,24 @@ and generates a custom Dockerfile based on an interactive setup.`,
 			os.Exit(1)
 		}
 
-		// For now, just print the choices.
+		// Display the choices to the user
 		// In the next step, we will use these to generate files.
 		fmt.Println("\nSelected IDEs:")
 		fmt.Printf("- %s\n", strings.Join(choices.IDEs, "\n- "))
 		fmt.Println("\nSelected Toolset:")
 		fmt.Printf("- %s\n", choices.Toolset)
+
+		// Generate the Dockerfile based on the user's choices.
+		fmt.Println("Generating Dockerfile...")
+		err = templates.GenerateDockerfile(choices, dirName)
+		cobra.CheckErr(err)
+
+		// Generate the README.md file.
+		fmt.Println("Generating README.md...")
+		err = templates.GenerateReadme(choices, projectName, dirName, dirName)
+		cobra.CheckErr(err)
+
+		fmt.Println("\n✅ Project created successfully!")
 	},
 }
 

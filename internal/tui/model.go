@@ -36,7 +36,7 @@ func initialModel() model {
 	return model{
 		step:           stepIDE,
 		ideOptions:     []string{"Neovide", "Visual Studio Code", "JetBrains Rider", "Geany"},
-		selectedIDEs:   make(map[string]bool),
+		selectedIDEs:   map[string]bool{"Neovide": true},
 		toolsetOptions: []string{"2D (Aseprite, Krita, Tiled)", "3D (Blender, Krita, Aseprite)"},
 		cursor:         0,
 	}
